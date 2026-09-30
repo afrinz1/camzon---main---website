@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   Star,
   Phone,
@@ -14,10 +14,8 @@ import {
   ArrowUpRight,
 } from 'lucide-react';
 import { Product, ActivePage } from '../types';
+import { fetchProduct, submitInquiry } from '../api';
 import { ProductCard } from './ProductCard';
-import faucetAureliaImg from '../assets/images/faucet_aurelia_1789820230663.jpg';
-import featuredFaucetImg from '../assets/images/featured_faucet_1789786590956.jpg';
-import ourDesignFaucetImg from '../assets/images/our_design_faucet_1789788346067.jpg';
 
 interface ProductDetailPageProps {
   product: Product;
@@ -34,7 +32,7 @@ interface ProductDetailPageProps {
 }
 
 export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
-  product,
+  product: initialProduct,
   allProducts,
   onNavigate,
   onGoBack,
@@ -46,25 +44,37 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
   wishlistIds,
   onQuickView,
 }) => {
+  const [product, setProduct] = useState(initialProduct);
   const [activeImageIdx, setActiveImageIdx] = useState(0);
   const [isOrderModalOpen, setIsOrderModalOpen] = useState(false);
   const [isLightboxOpen, setIsLightboxOpen] = useState(false);
 
   // Order modal form state
   const [orderFormSubmitted, setOrderFormSubmitted] = useState(false);
+  const [orderSubmitting, setOrderSubmitting] = useState(false);
+  const [orderError, setOrderError] = useState('');
   const [contactName, setContactName] = useState('');
   const [contactPhone, setContactPhone] = useState('');
   const [contactNote, setContactNote] = useState('');
 
   const [touchStartX, setTouchStartX] = useState<number | null>(null);
 
-  // Curate 3 distinct angle views for the product showcase
-  const angleImages = [
-    product.images?.[0] || faucetAureliaImg,
-    product.images?.[1] || featuredFaucetImg,
-    ourDesignFaucetImg || faucetAureliaImg,
-  ];
-  const activeImage = angleImages[activeImageIdx] || angleImages[0];
+  useEffect(() => {
+    let cancelled = false;
+    setProduct(initialProduct);
+    setActiveImageIdx(0);
+    fetchProduct(initialProduct.slug)
+      .then((loadedProduct) => {
+        if (!cancelled) setProduct(loadedProduct);
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, [initialProduct]);
+
+  const angleImages = product.images;
+  const activeImage = angleImages[activeImageIdx] || angleImages[0] || '';
 
   const handlePrevAngle = (e?: React.MouseEvent) => {
     e?.stopPropagation();
@@ -92,41 +102,30 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
     setTouchStartX(null);
   };
 
-  // Curated customer reviews
-  const customerReviews = [
-    {
-      author: 'Afrin',
-      rating: 5,
-      comment:
-        'Exceptional build quality! Heavy solid brass feel and the water stream is whisper-quiet. Looks like a European luxury fixture in our master bathroom.',
-    },
-    {
-      author: 'Arjun S.',
-      rating: 5,
-      comment:
-        'The mirror chrome finish is top tier. Zero water spots even after months of hard water usage. Camzon delivery was swift.',
-    },
-    {
-      author: 'Meera Nair',
-      rating: 5,
-      comment:
-        'Our interior designer suggested Camzon Aurelia. The precision machining on the base and the smooth single-lever action exceeded all expectations.',
-    },
-  ];
-
   // Related products (4 items)
   const relatedProducts = allProducts.filter((p) => p.id !== product.id).slice(0, 4);
 
-  const handleOrderSubmit = (e: React.FormEvent) => {
+  const handleOrderSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setOrderFormSubmitted(true);
-    setTimeout(() => {
-      setOrderFormSubmitted(false);
-      setIsOrderModalOpen(false);
+    setOrderSubmitting(true);
+    setOrderError('');
+    try {
+      await submitInquiry({
+        inquiry_type: 'order',
+        name: contactName.trim(),
+        phone: contactPhone.trim(),
+        message: contactNote.trim(),
+        product_name: product.title,
+      });
+      setOrderFormSubmitted(true);
       setContactName('');
       setContactPhone('');
       setContactNote('');
-    }, 2000);
+    } catch (error) {
+      setOrderError(error instanceof Error ? error.message : 'Unable to send your request. Please try again.');
+    } finally {
+      setOrderSubmitting(false);
+    }
   };
 
   const whatsappMessage = encodeURIComponent(
@@ -264,73 +263,22 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
               </h3>
 
               <div className="flex flex-col sm:flex-row sm:items-center gap-6 sm:gap-10">
-                {/* Large 4.5 /5 Score Block */}
+                {/* Product score */}
                 <div className="flex-shrink-0">
                   <div className="text-6xl sm:text-7xl font-bold text-white tracking-tight leading-none flex items-baseline">
-                    4.5
+                    {product.rating.toFixed(1)}
                     <span className="text-2xl sm:text-3xl text-stone-400 font-light ml-0.5">/5</span>
                   </div>
                   <div className="text-[11px] sm:text-xs text-stone-400 font-semibold tracking-wider mt-2">
-                    (150 REVIEWS)
+                    ({product.reviewsCount.toLocaleString('en-IN')} REVIEWS)
                   </div>
                 </div>
 
-                {/* 5 Rating Distribution Bars matching image.png */}
-                <div className="flex-1 space-y-2 max-w-xs sm:max-w-sm">
-                  {/* Star 5 Bar (heavy orange fill) */}
-                  <div className="flex items-center gap-2 text-xs">
-                    <div className="flex items-center gap-1 w-6 text-[#f26a1b] font-bold">
-                      <Star className="w-3.5 h-3.5 fill-[#f26a1b] text-[#f26a1b]" />
-                      <span>5</span>
-                    </div>
-                    <div className="flex-1 h-1.5 bg-[#22242a] rounded-full overflow-hidden">
-                      <div className="w-[82%] h-full bg-[#f26a1b] rounded-full" />
-                    </div>
-                  </div>
-
-                  {/* Star 4 Bar (shorter orange fill) */}
-                  <div className="flex items-center gap-2 text-xs">
-                    <div className="flex items-center gap-1 w-6 text-[#f26a1b] font-bold">
-                      <Star className="w-3.5 h-3.5 fill-[#f26a1b] text-[#f26a1b]" />
-                      <span>4</span>
-                    </div>
-                    <div className="flex-1 h-1.5 bg-[#22242a] rounded-full overflow-hidden">
-                      <div className="w-[14%] h-full bg-[#f26a1b] rounded-full" />
-                    </div>
-                  </div>
-
-                  {/* Star 3 Bar */}
-                  <div className="flex items-center gap-2 text-xs">
-                    <div className="flex items-center gap-1 w-6 text-[#f26a1b] font-bold">
-                      <Star className="w-3.5 h-3.5 fill-[#f26a1b] text-[#f26a1b]" />
-                      <span>3</span>
-                    </div>
-                    <div className="flex-1 h-1.5 bg-[#22242a] rounded-full overflow-hidden">
-                      <div className="w-[0%] h-full bg-[#f26a1b] rounded-full" />
-                    </div>
-                  </div>
-
-                  {/* Star 2 Bar */}
-                  <div className="flex items-center gap-2 text-xs">
-                    <div className="flex items-center gap-1 w-6 text-[#f26a1b] font-bold">
-                      <Star className="w-3.5 h-3.5 fill-[#f26a1b] text-[#f26a1b]" />
-                      <span>2</span>
-                    </div>
-                    <div className="flex-1 h-1.5 bg-[#22242a] rounded-full overflow-hidden">
-                      <div className="w-[0%] h-full bg-[#f26a1b] rounded-full" />
-                    </div>
-                  </div>
-
-                  {/* Star 1 Bar */}
-                  <div className="flex items-center gap-2 text-xs">
-                    <div className="flex items-center gap-1 w-6 text-[#f26a1b] font-bold">
-                      <Star className="w-3.5 h-3.5 fill-[#f26a1b] text-[#f26a1b]" />
-                      <span>1</span>
-                    </div>
-                    <div className="flex-1 h-1.5 bg-[#22242a] rounded-full overflow-hidden">
-                      <div className="w-[0%] h-full bg-[#f26a1b] rounded-full" />
-                    </div>
-                  </div>
+                <div className="flex items-center gap-1 text-amber-400" aria-label={`${product.rating} out of 5 stars`}>
+                  {[...Array(5)].map((_, index) => (
+                    <Star key={index} className={`h-4 w-4 ${index < Math.round(product.rating) ? 'fill-amber-400' : ''}`} />
+                  ))}
+                  <span className="ml-2 text-xs text-stone-400">{product.reviews.length} written reviews</span>
                 </div>
               </div>
             </div>
@@ -363,7 +311,11 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
             <div className="pt-1">
               <button
                 id="contact-order-btn"
-                onClick={() => setIsOrderModalOpen(true)}
+                onClick={() => {
+                  setOrderFormSubmitted(false);
+                  setOrderError('');
+                  setIsOrderModalOpen(true);
+                }}
                 className="w-full bg-[#f26a1b] hover:bg-[#d9560f] text-stone-950 font-bold text-base sm:text-lg py-3.5 px-6 rounded-xl shadow-lg transition-all duration-200 cursor-pointer active:scale-[0.99] text-center"
               >
                 Contact to order now!
@@ -422,19 +374,19 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
             {/* CARD 3: Review Card matching image.png */}
             {/* ===================================================================== */}
             <div className="bg-[#dadbe0] rounded-2xl p-5 sm:p-6 text-stone-900 shadow-md min-h-[135px] flex flex-col justify-between">
-              <div>
-                <div className="text-sm font-bold text-stone-900">
-                  {customerReviews[0].author}
+              {product.reviews[0] ? (
+                <div>
+                  <div className="text-sm font-bold text-stone-900">{product.reviews[0].author}</div>
+                  <div className="flex items-center gap-1 text-[#f26a1b] my-2">
+                    {[...Array(product.reviews[0].rating)].map((_, i) => (
+                      <Star key={i} className="w-3.5 h-3.5 fill-[#f26a1b] text-[#f26a1b]" />
+                    ))}
+                  </div>
+                  <p className="text-xs text-stone-700 leading-snug">"{product.reviews[0].comment}"</p>
                 </div>
-                <div className="flex items-center gap-1 text-[#f26a1b] my-2">
-                  {[...Array(customerReviews[0].rating)].map((_, i) => (
-                    <Star key={i} className="w-3.5 h-3.5 fill-[#f26a1b] text-[#f26a1b]" />
-                  ))}
-                </div>
-                <p className="text-xs text-stone-700 leading-snug">
-                  "{customerReviews[0].comment}"
-                </p>
-              </div>
+              ) : (
+                <p className="text-xs text-stone-700">No reviews submitted yet.</p>
+              )}
 
               {/* Bottom slider pill line matching image.png */}
               <div className="w-full flex justify-center pt-3">
@@ -641,7 +593,7 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
                   <Check className="w-8 h-8 text-emerald-400 mx-auto mb-2" />
                   <p className="font-bold text-sm">Request Submitted!</p>
                   <p className="text-xs text-emerald-400/80 mt-1">
-                    Our sales advisor will contact you within 15 minutes.
+                    Your request has been received. Our team will be in touch shortly.
                   </p>
                 </div>
               ) : (
@@ -687,12 +639,14 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
                     />
                   </div>
 
+                  {orderError && <p className="text-sm text-rose-300" role="alert">{orderError}</p>}
                   <button
                     type="submit"
-                    className="w-full bg-[#f26a1b] hover:bg-[#d9560f] text-stone-950 font-bold py-3 rounded-xl text-xs sm:text-sm uppercase tracking-wider flex items-center justify-center gap-2 transition-all cursor-pointer mt-2"
+                    disabled={orderSubmitting}
+                    className="w-full bg-[#f26a1b] hover:bg-[#d9560f] disabled:opacity-60 text-stone-950 font-bold py-3 rounded-xl text-xs sm:text-sm uppercase tracking-wider flex items-center justify-center gap-2 transition-all cursor-pointer mt-2"
                   >
                     <Send className="w-3.5 h-3.5" />
-                    <span>Send Order Request</span>
+                    <span>{orderSubmitting ? 'Sending...' : 'Send Order Request'}</span>
                   </button>
                 </form>
               )}

@@ -12,7 +12,6 @@ import {
   ArrowUpRight,
 } from 'lucide-react';
 import { Product, FilterState, ActivePage } from '../types';
-import { SIDEBAR_CATEGORIES } from '../data/products';
 import { ProductCard } from './ProductCard';
 import catalogBannerImg from '../assets/images/catalog_banner_1789820182050.jpg';
 
@@ -52,6 +51,16 @@ export const CatalogPage: React.FC<CatalogPageProps> = ({
 
   const [visibleCount, setVisibleCount] = useState<number>(6);
   const [mobileFilterOpen, setMobileFilterOpen] = useState(false);
+  const sidebarCategories = useMemo(() => {
+    const counts = new Map<string, number>();
+    products.forEach((product) => counts.set(product.category, (counts.get(product.category) || 0) + 1));
+    return [...counts].map(([id, count]) => ({ id, name: id, count }));
+  }, [products]);
+  const availableColors = useMemo(() => {
+    const colors = new Map<string, { name: string; hex: string }>();
+    products.forEach((product) => product.colors.forEach((color) => colors.set(color.name, color)));
+    return [...colors.values()];
+  }, [products]);
 
   // Sync initialCategory
   React.useEffect(() => {
@@ -68,6 +77,10 @@ export const CatalogPage: React.FC<CatalogPageProps> = ({
         if (filters.category !== 'all' && p.category.toLowerCase() !== filters.category.toLowerCase()) {
           return false;
         }
+        if (p.price < filters.minPrice || p.price > filters.maxPrice) return false;
+        if (filters.inStockOnly && p.stockCount <= 0) return false;
+        if (filters.onSaleOnly && !p.isSale) return false;
+        if (filters.selectedColor && !p.colors.some((color) => color.name === filters.selectedColor)) return false;
         // Search query
         if (filters.search.trim()) {
           const q = filters.search.toLowerCase();
@@ -84,7 +97,7 @@ export const CatalogPage: React.FC<CatalogPageProps> = ({
         if (filters.sortBy === 'price-low') return a.price - b.price;
         if (filters.sortBy === 'price-high') return b.price - a.price;
         if (filters.sortBy === 'rating') return b.rating - a.rating;
-        return 0; // featured default
+        return Number(b.isFeatured) - Number(a.isFeatured);
       });
   }, [products, filters]);
 
@@ -270,7 +283,7 @@ export const CatalogPage: React.FC<CatalogPageProps> = ({
               </div>
 
               <div className="space-y-2">
-                {SIDEBAR_CATEGORIES.map((cat) => {
+                {sidebarCategories.map((cat) => {
                   const isSelected = filters.category.toLowerCase() === cat.id.toLowerCase();
                   return (
                     <div
@@ -301,6 +314,53 @@ export const CatalogPage: React.FC<CatalogPageProps> = ({
                     </div>
                   );
                 })}
+              </div>
+            </div>
+
+            <div className="pt-2 border-t border-stone-800/80 space-y-3">
+              <span className="text-xs font-semibold text-stone-300">Price range</span>
+              <div className="grid grid-cols-2 gap-2">
+                <label className="text-[10px] text-stone-400">
+                  Min
+                  <input
+                    aria-label="Minimum price"
+                    type="number"
+                    min="0"
+                    value={filters.minPrice}
+                    onChange={(event) => setFilters((prev) => ({ ...prev, minPrice: Math.max(0, Number(event.target.value) || 0) }))}
+                    className="mt-1 w-full rounded bg-[#121316] border border-stone-700 px-2 py-1.5 text-xs text-white"
+                  />
+                </label>
+                <label className="text-[10px] text-stone-400">
+                  Max
+                  <input
+                    aria-label="Maximum price"
+                    type="number"
+                    min="0"
+                    value={filters.maxPrice}
+                    onChange={(event) => setFilters((prev) => ({ ...prev, maxPrice: Math.max(0, Number(event.target.value) || 0) }))}
+                    className="mt-1 w-full rounded bg-[#121316] border border-stone-700 px-2 py-1.5 text-xs text-white"
+                  />
+                </label>
+              </div>
+            </div>
+
+            <div className="pt-2 border-t border-stone-800/80 space-y-3">
+              <span className="text-xs font-semibold text-stone-300">Finish</span>
+              <div className="flex flex-wrap gap-2">
+                {availableColors.map((color) => (
+                  <button
+                    key={color.name}
+                    type="button"
+                    onClick={() => setFilters((prev) => ({ ...prev, selectedColor: prev.selectedColor === color.name ? '' : color.name }))}
+                    aria-label={`Filter by ${color.name}`}
+                    aria-pressed={filters.selectedColor === color.name}
+                    title={color.name}
+                    className={`h-6 w-6 rounded-full border ${filters.selectedColor === color.name ? 'ring-2 ring-[#f26a1b] ring-offset-2 ring-offset-[#1e2025]' : 'border-stone-500'}`}
+                    style={{ backgroundColor: color.hex }}
+                  />
+                ))}
+                {filters.selectedColor && <span className="self-center text-[10px] text-stone-300">{filters.selectedColor}</span>}
               </div>
             </div>
 
@@ -362,7 +422,7 @@ export const CatalogPage: React.FC<CatalogPageProps> = ({
             </div>
 
             {/* Reset Filters button if any filter is active */}
-            {(filters.category !== 'all' || filters.search) && (
+            {(filters.category !== 'all' || filters.search || filters.minPrice !== 0 || filters.maxPrice !== 25000 || filters.inStockOnly || filters.onSaleOnly || filters.selectedColor) && (
               <button
                 onClick={resetFilters}
                 className="w-full pt-2 flex items-center justify-center gap-1.5 text-[11px] text-stone-400 hover:text-white transition-colors cursor-pointer"
@@ -375,6 +435,22 @@ export const CatalogPage: React.FC<CatalogPageProps> = ({
 
           {/* RIGHT PRODUCT GRID (3 columns on desktop matching catalog.png) */}
           <main className="flex-1 w-full">
+            <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+              <p className="text-xs text-stone-400">{filteredProducts.length} products</p>
+              <label className="flex items-center gap-2 text-xs text-stone-400">
+                Sort by
+                <select
+                  value={filters.sortBy}
+                  onChange={(event) => setFilters((prev) => ({ ...prev, sortBy: event.target.value as FilterState['sortBy'] }))}
+                  className="rounded-md border border-stone-700 bg-[#1e2025] px-2.5 py-2 text-xs text-stone-100"
+                >
+                  <option value="featured">Featured</option>
+                  <option value="price-low">Price: low to high</option>
+                  <option value="price-high">Price: high to low</option>
+                  <option value="rating">Top rated</option>
+                </select>
+              </label>
+            </div>
             {displayedProducts.length === 0 ? (
               <div className="bg-[#1e2025] rounded-2xl p-12 text-center border border-stone-800">
                 <p className="text-stone-400 text-sm">No bathware designs found matching your search.</p>

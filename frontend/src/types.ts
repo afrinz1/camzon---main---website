@@ -79,7 +79,7 @@ export interface FilterState {
   inStockOnly: boolean;
   onSaleOnly: boolean;
   selectedColor: string;
-  sortBy: 'featured' | 'price-low' | 'price-high' | 'rating' | 'newest';
+  sortBy: 'featured' | 'price-low' | 'price-high' | 'rating';
   search: string;
 }
 

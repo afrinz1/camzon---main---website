@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { ActivePage, Product } from './types';
-import { PRODUCTS } from './data/products';
+import { fetchProducts } from './api';
 import { Navbar } from './components/Navbar';
 import { Footer } from './components/Footer';
 import { HomePage } from './components/HomePage';
@@ -10,16 +10,52 @@ import { WishlistDrawer } from './components/WishlistDrawer';
 import { QuickViewModal } from './components/QuickViewModal';
 import { SearchModal } from './components/SearchModal';
 
+function readWishlist(): Set<string> {
+  try {
+    const saved = JSON.parse(localStorage.getItem('camzon-wishlist') || '[]');
+    return new Set(Array.isArray(saved) ? saved.filter((id): id is string => typeof id === 'string') : []);
+  } catch {
+    return new Set();
+  }
+}
+
 export default function App() {
+  const [products, setProducts] = useState<Product[]>([]);
+  const [productsLoading, setProductsLoading] = useState(true);
+  const [productsError, setProductsError] = useState<string | null>(null);
+  const [reloadProducts, setReloadProducts] = useState(0);
   const [currentPage, setCurrentPage] = useState<ActivePage>('home');
   const [previousPage, setPreviousPage] = useState<ActivePage>('home');
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
-  const [selectedProduct, setSelectedProduct] = useState<Product>(PRODUCTS[0]);
+  const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
 
   // Wishlist state
-  const [wishlistIds, setWishlistIds] = useState<Set<string>>(
-    new Set(['cam-dart-01', 'cam-showers-01'])
-  );
+  const [wishlistIds, setWishlistIds] = useState<Set<string>>(readWishlist);
+
+  useEffect(() => {
+    let cancelled = false;
+    setProductsLoading(true);
+    setProductsError(null);
+    fetchProducts()
+      .then((loadedProducts) => {
+        if (!cancelled) setProducts(loadedProducts);
+      })
+      .catch((error: unknown) => {
+        if (!cancelled) {
+          setProductsError(error instanceof Error ? error.message : 'Unable to load products.');
+        }
+      })
+      .finally(() => {
+        if (!cancelled) setProductsLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [reloadProducts]);
+
+  useEffect(() => {
+    localStorage.setItem('camzon-wishlist', JSON.stringify([...wishlistIds]));
+  }, [wishlistIds]);
 
   // Modals & Drawers state
   const [isWishlistOpen, setIsWishlistOpen] = useState(false);
@@ -60,8 +96,10 @@ export default function App() {
   };
 
   const handleGoBack = () => {
-    if (currentPage === 'product') {
+    if (currentPage === 'product' && selectedProduct) {
       handleNavigate(previousPage || 'catalog', selectedProduct.category);
+    } else if (currentPage === 'product') {
+      handleNavigate('catalog');
     } else if (currentPage === 'catalog') {
       handleNavigate('home');
     } else {
@@ -84,7 +122,7 @@ export default function App() {
     });
   };
 
-  const wishlistProducts = PRODUCTS.filter((p) => wishlistIds.has(p.id));
+  const wishlistProducts = products.filter((p) => wishlistIds.has(p.id));
 
   return (
     <div className="min-h-screen flex flex-col bg-[#0a0a0c] text-stone-100 selection:bg-[#f26a1b] selection:text-white">
@@ -99,20 +137,32 @@ export default function App() {
 
       {/* 2. MAIN ACTIVE VIEW ROUTER */}
       <main className="flex-1">
-        {currentPage === 'home' && (
+        {productsLoading ? (
+          <div className="min-h-[50vh] flex items-center justify-center text-stone-300" role="status">
+            Loading products...
+          </div>
+        ) : productsError ? (
+          <div className="min-h-[50vh] flex flex-col items-center justify-center gap-4 px-4 text-center" role="alert">
+            <p className="text-stone-200">{productsError}</p>
+            <button
+              onClick={() => setReloadProducts((attempt) => attempt + 1)}
+              className="bg-[#f26a1b] px-5 py-2.5 rounded-lg text-sm font-semibold text-white"
+            >
+              Retry
+            </button>
+          </div>
+        ) : currentPage === 'home' ? (
           <HomePage
-            products={PRODUCTS}
+            products={products}
             onNavigate={handleNavigate}
             onSelectProduct={handleSelectProduct}
             onToggleWishlist={handleToggleWishlist}
             wishlistIds={wishlistIds}
             onQuickView={(p) => setQuickViewProduct(p)}
           />
-        )}
-
-        {currentPage === 'catalog' && (
+        ) : currentPage === 'catalog' ? (
           <CatalogPage
-            products={PRODUCTS}
+            products={products}
             initialCategory={selectedCategory}
             onNavigate={handleNavigate}
             onGoBack={handleGoBack}
@@ -121,12 +171,10 @@ export default function App() {
             wishlistIds={wishlistIds}
             onQuickView={(p) => setQuickViewProduct(p)}
           />
-        )}
-
-        {currentPage === 'product' && (
+        ) : currentPage === 'product' && selectedProduct ? (
           <ProductDetailPage
             product={selectedProduct}
-            allProducts={PRODUCTS}
+            allProducts={products}
             onNavigate={handleNavigate}
             onGoBack={handleGoBack}
             previousPage={previousPage}
@@ -136,7 +184,7 @@ export default function App() {
             wishlistIds={wishlistIds}
             onQuickView={(p) => setQuickViewProduct(p)}
           />
-        )}
+        ) : null}
       </main>
 
       {/* 3. SITE FOOTER */}
@@ -167,7 +215,7 @@ export default function App() {
       <SearchModal
         isOpen={isSearchOpen}
         onClose={() => setIsSearchOpen(false)}
-        products={PRODUCTS}
+        products={products}
         onSelectProduct={(p) => {
           handleSelectProduct(p);
           setIsSearchOpen(false);

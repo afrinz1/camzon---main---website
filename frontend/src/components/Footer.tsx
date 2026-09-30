@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { CheckCircle2, ExternalLink } from 'lucide-react';
 import { ActivePage } from '../types';
+import { submitInquiry } from '../api';
 import karamanaMapImg from '../assets/images/karamana_map_1789788742106.jpg';
 
 interface FooterProps {
@@ -14,14 +15,28 @@ export const Footer: React.FC<FooterProps> = ({ onNavigate, showContactSection =
   const [formEmail, setFormEmail] = useState('');
   const [formQuery, setFormQuery] = useState('');
   const [formSubmitted, setFormSubmitted] = useState(false);
+  const [formSubmitting, setFormSubmitting] = useState(false);
+  const [formError, setFormError] = useState('');
 
-  const handleContactSubmit = (e: React.FormEvent) => {
+  const handleContactSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (formName.trim() && formEmail.trim()) {
+    setFormSubmitting(true);
+    setFormError('');
+    try {
+      await submitInquiry({
+        inquiry_type: 'contact',
+        name: formName.trim(),
+        email: formEmail.trim(),
+        message: formQuery.trim(),
+      });
       setFormSubmitted(true);
       setFormName('');
       setFormEmail('');
       setFormQuery('');
+    } catch (error) {
+      setFormError(error instanceof Error ? error.message : 'Unable to send your message. Please try again.');
+    } finally {
+      setFormSubmitting(false);
     }
   };
 
@@ -76,7 +91,7 @@ export const Footer: React.FC<FooterProps> = ({ onNavigate, showContactSection =
                   <CheckCircle2 className="w-14 h-14 text-[#f26a1b] mx-auto animate-bounce" />
                   <h3 className="text-2xl font-bold text-white">Thank You for Connecting</h3>
                   <p className="text-stone-300 text-xs sm:text-sm max-w-sm mx-auto leading-relaxed">
-                    Our technical bathware specialist will review your query and get back to you shortly.
+                    Your message has been received. Our team will be in touch shortly.
                   </p>
                   <button
                     onClick={() => setFormSubmitted(false)}
@@ -148,12 +163,14 @@ export const Footer: React.FC<FooterProps> = ({ onNavigate, showContactSection =
 
                   {/* Row 3: Submit Button matching home-footer.png */}
                   <div className="pt-2">
+                    {formError && <p className="text-sm text-rose-300" role="alert">{formError}</p>}
                     <button
                       id="contact-submit-btn"
                       type="submit"
-                      className="w-full bg-[#f26a1b] hover:bg-[#d9560f] text-white font-medium sm:font-semibold py-4 rounded-xl text-base tracking-normal transition-colors shadow-lg shadow-orange-950/30 cursor-pointer"
+                      disabled={formSubmitting}
+                      className="w-full bg-[#f26a1b] hover:bg-[#d9560f] disabled:opacity-60 text-white font-medium sm:font-semibold py-4 rounded-xl text-base tracking-normal transition-colors shadow-lg shadow-orange-950/30 cursor-pointer"
                     >
-                      Submit.
+                      {formSubmitting ? 'Sending...' : 'Submit.'}
                     </button>
                   </div>
                 </form>
