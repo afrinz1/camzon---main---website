@@ -1,5 +1,6 @@
 import { Product } from './types';
 import { PRODUCT_IMAGES } from './data/productImages';
+import demoProductImage from './assets/images/1.webp';
 
 const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL || '').replace(/\/+$/, '');
 
@@ -13,9 +14,12 @@ export interface InquiryPayload {
 }
 
 function mapProductImages(product: Product): Product {
+  const images = Array.isArray(product.images) ? product.images : [];
   return {
     ...product,
-    images: product.images.map((image) => PRODUCT_IMAGES[image] ?? image),
+    images: images.length > 0
+      ? images.map((image) => PRODUCT_IMAGES[image] ?? image)
+      : [demoProductImage],
   };
 }
 

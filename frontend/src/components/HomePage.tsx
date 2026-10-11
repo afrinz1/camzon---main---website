@@ -14,6 +14,7 @@ import ourTechImg from '../assets/images/our_tech_valve_1789788320984.jpg';
 import ourStoryImg from '../assets/images/our_story_interior_1789788334757.jpg';
 import ourDesignImg from '../assets/images/our_design_faucet_1789788346067.jpg';
 import camzonHeroBg from '../assets/images/camzon_hero_bg_1789864474967.jpg';
+import arnoFeaturedImg from '../assets/images/1.webp';
 
 interface HomePageProps {
   products: Product[];
@@ -538,6 +539,45 @@ export const HomePage: React.FC<HomePageProps> = ({
                 src={ourDesignImg}
                 alt="CAMZON RIDGE Collection"
                 referrerPolicy="no-referrer"
+                draggable={false}
+                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 pointer-events-none"
+              />
+            </div>
+          </div>
+
+          {/* Card 5: ARNO. */}
+          <div
+            id="featured-card-arno"
+            className="flex-shrink-0 w-[85vw] sm:w-[380px] md:w-[440px] lg:w-[480px] snap-start border border-white/20 hover:border-white/40 rounded-[20px] overflow-hidden bg-black flex flex-col sm:flex-row min-h-[280px] sm:min-h-[290px] transition-all duration-300 shadow-xl"
+          >
+            <div className="w-full sm:w-[48%] bg-[#d8d9de] p-5 sm:p-6 flex flex-col justify-between flex-1">
+              <div>
+                <h3 className="text-base sm:text-lg lg:text-xl font-black text-black tracking-tight mb-2 uppercase">
+                  ARNO.
+                </h3>
+                <p className="text-stone-800 text-xs lg:text-[13px] font-normal leading-relaxed">
+                  Discover the ARNO collection and find a considered finishing touch for your space.
+                </p>
+              </div>
+              <div className="pt-4">
+                <button
+                  id="arno-discover-btn"
+                  onClick={() => onNavigate('catalog', 'ARNO')}
+                  className="bg-[#f26a1b] hover:bg-[#ea580c] text-white font-semibold text-xs px-4 py-2 rounded-full transition-all shadow-sm cursor-pointer whitespace-nowrap inline-flex items-center gap-1.5"
+                >
+                  <span>Discover more</span>
+                  <ArrowRight className="w-3.5 h-3.5" />
+                </button>
+              </div>
+            </div>
+
+            <div
+              className="w-full sm:w-[52%] h-48 sm:h-auto min-h-[160px] relative bg-[#0b0c0e] overflow-hidden cursor-pointer group"
+              onClick={() => onNavigate('catalog', 'ARNO')}
+            >
+              <img
+                src={arnoFeaturedImg}
+                alt="ARNO collection preview"
                 draggable={false}
                 className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 pointer-events-none"
               />

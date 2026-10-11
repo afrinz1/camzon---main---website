@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Heart, Eye, Star, ChevronLeft, ChevronRight, ArrowRight } from 'lucide-react';
 import { Product } from '../types';
+import { ProductImage } from './ProductImage';
 
 interface ProductCardProps {
   product: Product;
@@ -75,7 +76,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({
           onTouchStart={handleTouchStart}
           onTouchEnd={handleTouchEnd}
         >
-          <img
+          <ProductImage
             src={displayImage}
             alt={product.title}
             className="w-full h-full object-cover object-center group-hover:scale-105 transition-transform duration-500"
@@ -260,7 +261,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({
           </button>
         )}
 
-        <img
+        <ProductImage
           src={displayImage}
           alt={product.title}
           className="w-full h-full object-cover object-center group-hover:scale-105 transition-transform duration-500 ease-out"

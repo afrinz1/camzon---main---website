@@ -8,7 +8,7 @@ CAMZON is a bathware and faucet storefront. The frontend is a React and TypeScri
 - Wishlist saved in the browser's local storage
 - Contact and product-order inquiry forms
 - Django admin pages for managing products and reviewing inquiries
-- SQLite database with demo products loaded by a data migration
+- SQLite database with an empty product catalog; add products through Django admin
 
 ## Requirements
 
@@ -74,6 +74,8 @@ python manage.py createsuperuser
 ```
 
 The test module must be named explicitly: the bare `python manage.py test` command currently reports zero tests. After creating a superuser, open `http://127.0.0.1:8000/admin/` to manage products and inspect submitted inquiries.
+
+The product-removal migration clears every existing product record. Export any products you need to keep before applying migrations.
 
 ## Frontend commands
 

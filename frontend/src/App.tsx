@@ -10,6 +10,8 @@ import { WishlistDrawer } from './components/WishlistDrawer';
 import { QuickViewModal } from './components/QuickViewModal';
 import { SearchModal } from './components/SearchModal';
 
+const MIN_LOADING_DURATION_MS = 1200;
+
 function readWishlist(): Set<string> {
   try {
     const saved = JSON.parse(localStorage.getItem('camzon-wishlist') || '[]');
@@ -34,6 +36,8 @@ export default function App() {
 
   useEffect(() => {
     let cancelled = false;
+    let loadingTimeout: ReturnType<typeof setTimeout> | undefined;
+    const loadingStartedAt = Date.now();
     setProductsLoading(true);
     setProductsError(null);
     fetchProducts()
@@ -46,10 +50,19 @@ export default function App() {
         }
       })
       .finally(() => {
-        if (!cancelled) setProductsLoading(false);
+        if (!cancelled) {
+          const remainingDuration = Math.max(
+            0,
+            MIN_LOADING_DURATION_MS - (Date.now() - loadingStartedAt),
+          );
+          loadingTimeout = setTimeout(() => {
+            if (!cancelled) setProductsLoading(false);
+          }, remainingDuration);
+        }
       });
     return () => {
       cancelled = true;
+      if (loadingTimeout !== undefined) clearTimeout(loadingTimeout);
     };
   }, [reloadProducts]);
 
@@ -138,8 +151,13 @@ export default function App() {
       {/* 2. MAIN ACTIVE VIEW ROUTER */}
       <main className="flex-1">
         {productsLoading ? (
-          <div className="min-h-[50vh] flex items-center justify-center text-stone-300" role="status">
-            Loading products...
+          <div
+            className="min-h-[50vh] flex flex-col items-center justify-center gap-4 text-stone-300"
+            role="status"
+            aria-live="polite"
+          >
+            <span className="loading-spinner" aria-hidden="true" />
+            <span className="loading-message">Preparing your collection...</span>
           </div>
         ) : productsError ? (
           <div className="min-h-[50vh] flex flex-col items-center justify-center gap-4 px-4 text-center" role="alert">

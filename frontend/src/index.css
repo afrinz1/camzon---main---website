@@ -18,6 +18,38 @@
   font-family: 'Playfair Display', Georgia, serif;
 }
 
+@keyframes camzon-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes camzon-loading-pulse {
+  50% {
+    opacity: 0.55;
+  }
+}
+
+.loading-spinner {
+  width: 2rem;
+  height: 2rem;
+  border: 2px solid rgb(243 244 246 / 15%);
+  border-top-color: #f26a1b;
+  border-radius: 50%;
+  animation: camzon-spin 900ms linear infinite;
+}
+
+.loading-message {
+  animation: camzon-loading-pulse 1.8s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .loading-spinner,
+  .loading-message {
+    animation: none;
+  }
+}
+
 @keyframes marquee {
   0% {
     transform: translateX(0%);
@@ -60,4 +92,3 @@
   -ms-overflow-style: none;
   scrollbar-width: none;
 }
-

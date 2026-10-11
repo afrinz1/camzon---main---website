@@ -1,6 +1,7 @@
 import React from 'react';
 import { X, Trash2, Heart, ArrowRight, MessageCircle } from 'lucide-react';
 import { Product } from '../types';
+import { ProductImage } from './ProductImage';
 
 interface WishlistDrawerProps {
   isOpen: boolean;
@@ -88,7 +89,7 @@ export const WishlistDrawer: React.FC<WishlistDrawerProps> = ({
                     }}
                     className="w-20 h-20 rounded-lg bg-[#121316] overflow-hidden flex-shrink-0 cursor-pointer border border-stone-700/60"
                   >
-                    <img
+                    <ProductImage
                       src={product.images[0]}
                       alt={product.title}
                       className="w-full h-full object-cover"

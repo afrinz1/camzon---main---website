@@ -16,6 +16,7 @@ import {
 import { Product, ActivePage } from '../types';
 import { fetchProduct, submitInquiry } from '../api';
 import { ProductCard } from './ProductCard';
+import { ProductImage } from './ProductImage';
 
 interface ProductDetailPageProps {
   product: Product;
@@ -230,7 +231,7 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
                 <div className="absolute inset-0 bg-radial from-[#222530]/25 via-transparent to-transparent pointer-events-none" />
 
                 {/* Primary High-Resolution Product Image */}
-                <img
+                <ProductImage
                   src={activeImage}
                   alt={product.title}
                   className="w-full h-auto max-h-[440px] sm:max-h-[480px] object-contain drop-shadow-[0_25px_50px_rgba(0,0,0,0.85)] transition-transform duration-500 hover:scale-[1.02]"
@@ -494,7 +495,7 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
               <ChevronRight className="w-6 h-6" />
             </button>
 
-            <img
+            <ProductImage
               src={activeImage}
               alt={product.title}
               className="max-h-[75vh] w-auto object-contain drop-shadow-2xl select-none"
@@ -543,7 +544,7 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
             <div className="p-6 space-y-5">
               {/* Product mini summary */}
               <div className="flex items-center gap-4 p-3 bg-[#121316] rounded-2xl border border-stone-800/80">
-                <img
+                <ProductImage
                   src={activeImage}
                   alt={product.title}
                   className="w-14 h-14 object-contain rounded-lg bg-stone-900"

@@ -8,22 +8,53 @@ class ProductApiTests(TestCase):
 	def setUp(self):
 		self.client = APIClient()
 
-	def test_product_list_returns_seeded_products(self):
+	def test_product_list_is_empty_without_products(self):
 		response = self.client.get('/api/products/')
 
 		self.assertEqual(response.status_code, 200)
-		self.assertEqual(len(response.data), 10)
-		self.assertIn('images', response.data[0])
+		self.assertEqual(response.data, [])
 
 	def test_product_detail_returns_product_and_unknown_slug_is_404(self):
+		Product.objects.create(
+			id='test-product',
+			slug='test-product',
+			title='Test product',
+			subtitle='A product for API tests.',
+			category='DART',
+			price=1000,
+			sku='TEST-001',
+			description='A test product.',
+		)
 		response = self.client.get('/api/products/camzon-dart-basin-mixer/')
 		missing_response = self.client.get('/api/products/not-a-product/')
+		test_product_response = self.client.get('/api/products/test-product/')
 
-		self.assertEqual(response.status_code, 200)
-		self.assertEqual(response.data['id'], 'cam-dart-01')
+		self.assertEqual(response.status_code, 404)
+		self.assertEqual(test_product_response.status_code, 200)
+		self.assertEqual(test_product_response.data['id'], 'test-product')
 		self.assertEqual(missing_response.status_code, 404)
 
 	def test_product_filters_and_rejects_invalid_sort(self):
+		Product.objects.create(
+			id='test-dart',
+			slug='test-dart',
+			title='Test DART',
+			subtitle='A DART product for API tests.',
+			category='DART',
+			price=1000,
+			sku='TEST-DART',
+			description='A test DART product.',
+		)
+		Product.objects.create(
+			id='test-duero',
+			slug='test-duero',
+			title='Test DUERO',
+			subtitle='A DUERO product for API tests.',
+			category='DUERO',
+			price=2000,
+			sku='TEST-DUERO',
+			description='A test DUERO product.',
+		)
 		filtered_response = self.client.get('/api/products/?category=DART')
 		invalid_response = self.client.get('/api/products/?sort=unknown')
 
