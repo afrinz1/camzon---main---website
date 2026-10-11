@@ -1,0 +1,16 @@
+
+{
+  "version": 2,
+  "builds": [
+    {
+      "src": "camzon/camzon/wsgi.py",
+      "use": "@vercel/python"
+    }
+  ],
+  "routes": [
+    {
+      "src": "/(.*)",
+      "dest": "camzon/camzon/wsgi.py"
+    }
+  ]
+}
