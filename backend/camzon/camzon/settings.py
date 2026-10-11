@@ -32,11 +32,19 @@ if not SECRET_KEY:
     else:
         raise ImproperlyConfigured('Set DJANGO_SECRET_KEY in the environment.')
 
+
 ALLOWED_HOSTS = [
-    host.strip()
-    for host in os.environ.get('DJANGO_ALLOWED_HOSTS', 'localhost,127.0.0.1').split(',')
-    if host.strip()
+    "camzon-main-website-lemon.vercel.app",
+    *[
+        host.strip()
+        for host in os.environ.get(
+            "DJANGO_ALLOWED_HOSTS",
+            "localhost,127.0.0.1"
+        ).split(",")
+        if host.strip()
+    ],
 ]
+
 CORS_ALLOWED_ORIGINS = [
     origin.strip()
     for origin in os.environ.get(
