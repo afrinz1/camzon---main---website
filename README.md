@@ -1,4 +1,4 @@
-# CAMZON
+# CAMZON - PROJECT
 
 CAMZON is a bathware and faucet storefront. The frontend is a React and TypeScript single-page app built with Vite; a Django REST Framework backend serves the product catalog and stores customer inquiries.
 
